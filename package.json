@@ -4,6 +4,7 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "migrate:latest": "knex migrate:latest",
+    "seed": "knex seed:run --knexfile knexfile.ts",
     "test": "jest"
   },
   "dependencies": {

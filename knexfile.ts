@@ -20,6 +20,7 @@ const dbConfig = {
   migrations: {
     directory: "./src/db/migrations",
   },
+  seeds: { directory: "./seeds" },
 };
 
 export default dbConfig as Knex.Config;

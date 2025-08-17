@@ -6,6 +6,8 @@ export async function getAll(page: number, limit: number) {
     .limit(limit)
     .offset((page - 1) * limit);
 
+    console.log('superheroes', superheroes)
+
   for (const hero of superheroes) {
     const [image] = await db("superhero_images")
       .where("superhero_id", hero.id)

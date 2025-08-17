@@ -6,16 +6,16 @@ dotenv.config();
 const dbConfig = {
   client: "postgresql",
   connection: {
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASS,
-    database: process.env.DB_NAME,
+    // host: process.env.DB_HOST,
+    // user: process.env.DB_USER,
+    // password: process.env.DB_PASS,
+    // database: process.env.DB_NAME,
 
-    // port: process.env.DATABASE_PORT,
-    // host: process.env.DATABASE_HOST,
-    // database: process.env.DATABASE_NAME,
-    // user: process.env.DATABASE_USER,
-    // password: process.env.DATABASE_ACCESS_KEY,
+    port: Number(process.env.DATABASE_PORT) || 5432,
+    host: process.env.DATABASE_HOST,
+    database: process.env.DATABASE_NAME,
+    user: process.env.DATABASE_USER,
+    password: process.env.DATABASE_ACCESS_KEY,
   },
   migrations: {
     directory: "./src/db/migrations",

@@ -9,7 +9,7 @@ export async function seed(knex: Knex): Promise<void> {
       nickname: "Superman",
       real_name: "Clark Kent",
       origin_description: "From Krypton",
-      superpowers: "flight,heat vision,invulnerability",
+      superpowers: JSON.stringify(["flight", "heat vision", "invulnerability"]),
       catch_phrase: "Up in the sky!",
     })
     .returning("id")

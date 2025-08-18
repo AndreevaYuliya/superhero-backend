@@ -26,16 +26,44 @@ export async function create(req: Request, res: Response) {
 
 export async function update(req: Request, res: Response) {
   const { id } = req.params;
-  const { nickname, real_name, origin_description, superpowers, catch_phrase } =
-    req.body;
+  const {
+    nickname,
+    real_name,
+    origin_description,
+    superpowers,
+    catch_phrase,
+    retainImageIds,
+  } = req.body;
+
+  // 👇 если пришло строкой – парсим
+  let retainIds: number[] = [];
+  if (retainImageIds) {
+    try {
+      retainIds = Array.isArray(retainImageIds)
+        ? retainImageIds.map(Number)
+        : JSON.parse(retainImageIds); // строка из FormData
+    } catch {
+      retainIds = [];
+    }
+  }
+
   const files = req.files as Express.Multer.File[];
   const imageUrls = files.map((file) => `/uploads/${file.filename}`);
+
   const updatedHero = await service.update(
     Number(id),
     { nickname, real_name, origin_description, superpowers, catch_phrase },
-    imageUrls
+    imageUrls,
+    retainIds
   );
+
   res.json(updatedHero);
+}
+
+
+export async function removeImage(req: Request, res: Response) {
+  await service.removeImage(Number(req.params.id))
+  
 }
 
 export async function remove(req: Request, res: Response) {

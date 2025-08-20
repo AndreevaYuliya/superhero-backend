@@ -1,93 +1,98 @@
-import db from "../db/knex";
+import db from '../db/knex';
+import { Superhero, SuperheroDB } from '../models/superhero.model';
 
-export async function getAll(page: number, limit: number) {
-  const offset = (page - 1) * limit;
+export const getAll = async (page: number, limit: number) => {
+	const offset = (page - 1) * limit;
 
-  // 1. Get total number of superheroes
-  const countResult: { count: string }[] = await db("superheroes").count("id as count");
-  const total = Number(countResult[0]?.count || 0);
+	const countResult: { count: string }[] = await db('superheroes').count('id as count');
+	const total = Number(countResult[0]?.count || 0);
 
-  // 2. Get heroes
-  const superheroes = await db("superheroes")
-    .select("*")
-    .limit(limit)
-    .offset(offset);
+	const superheroesDB: SuperheroDB[] = await db('superheroes')
+		.select('*')
+		.limit(limit)
+		.offset(offset);
 
-  // 3. Attach only the first image
-  for (const hero of superheroes) {
-    const firstImage = await db("superhero_images")
-      .where("superhero_id", hero.id)
-      .select("image_url")
-      .first(); // only the first image
+	const superheroes: Superhero[] = [];
 
-    hero.image = firstImage ? firstImage.image_url : null; // single image
+	for (const hero of superheroesDB) {
+		const firstImage = await db('superhero_images')
+			.where('superhero_id', hero.id)
+			.select('image_url')
+			.first();
 
-    // Парсим superpowers из строки в массив
-    hero.superpowers = hero.superpowers ? JSON.parse(hero.superpowers) : [];
-  }
+		superheroes.push({
+			...hero,
+			superpowers: hero.superpowers ? JSON.parse(hero.superpowers) : [],
+			image: firstImage ? firstImage.image_url : null,
+		});
+	}
 
-  return {
-    items: superheroes,  // array of heroes
-    total,               // total heroes count
-    limit,               // limit per page
-    offset,              // offset
-  };
-}
+	return {
+		items: superheroes,
+		total,
+		limit,
+		offset,
+	};
+};
 
-export async function getById(id: number) {
-  const hero = await db("superheroes").where({ id }).first();
-  if (!hero) return null;
+export const getById = async (id: number): Promise<Superhero | null> => {
+	const hero: SuperheroDB | undefined = await db('superheroes').where({ id }).first();
 
-  const images = await db("superhero_images")
-    .where("superhero_id", id)
-    .select("id", "image_url", "created_at", "updated_at");
+	if (!hero) return null;
 
-    // Парсим superpowers из строки в массив
-    hero.superpowers = hero.superpowers ? JSON.parse(hero.superpowers) : [];
+	const images = await db('superhero_images')
+		.where('superhero_id', id)
+		.select('id', 'image_url', 'created_at', 'updated_at');
 
-  return { ...hero, images }; // full array of images for details
-}
+	return {
+		...hero,
+		superpowers: hero.superpowers ? JSON.parse(hero.superpowers) : [],
+		images,
+	};
+};
 
-export async function create(data: any, imageUrls: string[]) {
-  const [id] = await db("superheroes").insert({ ...data, superpowers: JSON.stringify(data.superpowers) }).returning("id");
+export const create = async (
+	data: Omit<Superhero, 'id' | 'images' | 'image'>,
+	imageUrls: string[],
+): Promise<Superhero | null> => {
+	const [insertedId] = await db('superheroes')
+		.insert({ ...data, superpowers: JSON.stringify(data.superpowers) })
+		.returning('id');
 
-  if (imageUrls.length) {
-    await db("superhero_images").insert(
-      imageUrls.map((url) => ({ superhero_id: id.id ?? id, image_url: url }))
-    );
-  }
+	if (imageUrls.length) {
+		await db('superhero_images').insert(
+			imageUrls.map((url) => ({
+				superhero_id: insertedId.id ?? insertedId,
+				image_url: url,
+			})),
+		);
+	}
 
-  return getById(id.id ?? id);
-}
+	return getById(insertedId.id ?? insertedId);
+};
 
-export async function update(id: number, data: any, imageUrls: string[], retainImageIds: number[]) {
-  console.log(11111)
-  console.log(11111)
-  console.log(11111)
-  console.log(11111)
-  await db("superheroes").where({ id }).update({ ...data, superpowers: JSON.stringify(data.superpowers) });
+export const update = async (
+	id: number,
+	data: Omit<Superhero, 'id' | 'images' | 'image'>,
+	imageUrls: string[],
+): Promise<Superhero | null> => {
+	await db('superheroes')
+		.where({ id })
+		.update({ ...data, superpowers: JSON.stringify(data.superpowers) });
 
-  // удалить старые изображения, которых нет в retainImageIds
-  await db("superhero_images")
-    .where({ superhero_id: id })
-    .whereNotIn("id", retainImageIds)
-    .del();
+	if (imageUrls.length) {
+		await db('superhero_images').insert(
+			imageUrls.map((url) => ({ superhero_id: id, image_url: url })),
+		);
+	}
 
-  if (imageUrls.length) {
-    // await db("superhero_images").where({ superhero_id: id }).del();
-    await db("superhero_images").insert(
-      imageUrls.map((url) => ({ superhero_id: id, image_url: url }))
-    );
-  }
+	return getById(id);
+};
 
-  return getById(id);
-}
+export const removeImage = async (id: number): Promise<number> => {
+	return db('superhero_images').where({ id }).del();
+};
 
-export async function removeImage(id: number) {
-  return db("superhero_images").where({id}).del()
-  
-}
-
-export async function remove(id: number) {
-  return db("superheroes").where({ id }).del();
-}
+export const remove = async (id: number): Promise<number> => {
+	return db('superheroes').where({ id }).del();
+};
